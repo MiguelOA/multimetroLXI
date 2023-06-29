@@ -1,8 +1,8 @@
 # ****************************************************
-# MULTIMETRO VIRTUALIZADO
+# MULTIMETRO VIRTUALIZADO LXI
 # DESARROLLADOR: Luis Alberto Barrera Sandoval
-# VERSION: 0.1
-# URL:
+# VERSION: 0.2
+# URL: https://github.com/MiguelOA/multimetroLXI
 # NOTAS
 # ****************************************************
 # ******************************************* LIBRARYS
@@ -17,13 +17,13 @@ from datetime import datetime
 
 # *********************************** GLOBAL VARIABLES
 idn = 'Multimeter: '
-c = 5   #Number of connection attempts
+c = 5   #number of connection attempts
 rm = pyvisa.ResourceManager()
 rm.list_resources()
 inst = None
-ipAdd = "10.0.9.23"
-timeout = 10000
-instName = "TCPIP::"+ipAdd+"::INSTR"
+ipAdd = "10.0.9.23" #ip address
+timeout = 10000     #connection timeout
+instName = "TCPIP::" + ipAdd + "::INSTR"
 print(instName)
 while(c > 0):
     try:
@@ -43,42 +43,44 @@ print(c)
 x = None
 y = None
 killThread = False
-unidad = ""
+unit = ""
 pause = False
 flag = False
 playState = False
-Intervalo = 1.0
+Interval = 1.0
 fileSave = None
 Ent = None
-contDatos = 0
+contData = 0
 imaPlay = None
+
 # ****************************************** FUNCTIONS
 
 
-def fnInitConexion():
+def fnInitConnection():
     rm = pyvisa.ResourceManager()
     rm.list_resources()
     inst = rm.open_resource(instName)
     idn = inst.query("*IDN?")
-    messagebox.showinfo(message=idn, title="Identificacion")
+    messagebox.showinfo(message=idn, title="Identification")
 
 
 def fnConfRes():
     if(fileSave == None ):
         try:
             global pause
-            global unidad
+            global unit
             pause = True
             while flag:
                 time.sleep(0.1)
             inst.write("CONF:RES")
-            unidad = "Ohm"
+            unit = "Ohm"
             pause = False
         except Exception as e:
             print(e)
             pause = False
     else:
-        messagebox.showinfo(message="No se puede realizar mientras se graba", title="Error!")
+        messagebox.showinfo(message="This action cannot be performed "+
+                            "while recording is in progress", title="Error!")
 
 
 def fnConfVoltAc():
@@ -89,14 +91,15 @@ def fnConfVoltAc():
             while flag:
                 time.sleep(0.1)
             inst.write("CONF:VOLT:AC")
-            global unidad
-            unidad = "V"
+            global unit
+            unit = "V"
             pause = False
         except:
             print("Conf error")
             pause = False
     else:
-        messagebox.showinfo(message="No se puede realizar mientras se graba", title="Error!")
+        messagebox.showinfo(message="This action cannot be performed "+
+                            "while recording is in progress", title="Error!")
 
 
 def fnConfVoltDc():
@@ -107,14 +110,15 @@ def fnConfVoltDc():
             while flag:
                 time.sleep(0.1)
             inst.write("CONF:VOLT:DC")
-            global unidad
-            unidad = "V"
+            global unit
+            unit = "V"
             pause = False
         except:
             print("Conf error")
             pause = False
     else:
-        messagebox.showinfo(message="No se puede realizar mientras se graba", title="Error!")
+        messagebox.showinfo(message="This action cannot be performed "+
+                            "while recording is in progress", title="Error!")
 
 
 def fnConfCurrAc():
@@ -125,14 +129,15 @@ def fnConfCurrAc():
             while flag:
                 time.sleep(0.1)
             inst.write("CONF:CURR:AC")
-            global unidad
-            unidad = "A"
+            global unit
+            unit = "A"
             pause = False
         except:
             print("Conf error")
             pause = False
     else:
-        messagebox.showinfo(message="No se puede realizar mientras se graba", title="Error!")
+        messagebox.showinfo(message="This action cannot be performed "+
+                            "while recording is in progress", title="Error!")
 
 
 def fnConfCurrDc():
@@ -143,36 +148,37 @@ def fnConfCurrDc():
             while flag:
                 time.sleep(0.1)
             inst.write("CONF:CURR:DC")
-            global unidad
-            unidad = "A"
+            global unit
+            unit = "A"
             pause = False
         except:
             print("Conf error")
             pause = False
     else:
-        messagebox.showinfo(message="No se puede realizar mientras se graba", title="Error!")
+        messagebox.showinfo(message="This action cannot be performed "+
+                            "while recording is in progress", title="Error!")
 
 
 def fnPlay():
-    if(unidad != ""):
+    if(unit != ""):
         global fileSave
         if fileSave == None:
-            fnConDatos()
+            fnConData()
             now = datetime.now()
             currentTime = now.strftime("%H_%M_%S")
             nameFile = "Save" + currentTime + ".csv"
             fileSave = open(nameFile, "w")
-            medida = fnGetConf()
-            Sal = "Tiempo," + medida + "\n"
+            measure = fnGetConf()
+            Sal = "Tiempo," + measure + "\n"
             fileSave.write(Sal)
         global playState
         playState = not (playState)
         global imaPlay
         if playState:
-            imaPlay = PhotoImage(file="pause.png")
+            imaPlay = PhotoImage(file="./img/pause.png")
             btnPlay.config(image=imaPlay)
         else:
-            imaPlay = PhotoImage(file="play.png")
+            imaPlay = PhotoImage(file="./img/play.png")
             btnPlay.config(image=imaPlay)
         fnRecordState()
     
@@ -185,7 +191,7 @@ def fnSave():
         fileSave.close()
         fileSave = None
         playState = False
-        imaPlay = PhotoImage(file="play.png")
+        imaPlay = PhotoImage(file="./img/play.png")
         btnPlay.config(image=imaPlay)
     fnRecordState()
 
@@ -194,17 +200,17 @@ def fnGetConf():
     pause = True
     while flag:
         time.sleep(0.1)
-    medida = inst.query("CONF?")
-    print("Conf completo: "+medida)
-    pos = medida.find(" ")
-    medida = medida[1:pos]
+    measure = inst.query("CONF?")
+    print("All Conf: "+measure)
+    pos = measure.find(" ")
+    measure = measure[1:pos]
     inst.write("*CLS")
     inst.query("*OPC?")
-    if(medida != "RES" and  medida.find(":") == -1):
-        medida = medida + ":DC"
-    print("Medida: "+medida)
+    if(measure != "RES" and  measure.find(":") == -1):
+        measure = measure + ":DC"
+    print("Measure: "+measure)
     pause = False
-    return medida
+    return measure
 
 
 
@@ -219,124 +225,120 @@ def fnRecordState():
         lblRecord.config(text="Record: Paused", fg="blue")
 
 
-def fnApplyInt():   
-    s = entInterval.get()
-    if(fileSave == None ):
-        if(s.isnumeric()):
-            global Intervalo
-            Intervalo = (int(entInterval.get())) / 1000.0
-            s1 = str(Intervalo) + ""
-            lblInt.config(text="Interval in ms ("+ s +")")
-            print("Intervalo: "+ s1)
-        else:
-            messagebox.showinfo(message="La entrada es incorrecta, debe ser entera", title="Error!")
-    else:
-        messagebox.showinfo(message="No se puede realizar mientras se graba", title="Error!")
-
-def fnConDatos():
+def fnConData():
     if fileSave != None:
-        if OpcNumDatos.get():
-            OpcNumDatos.set(0)
+        if OpcNumData.get():
+            OpcNumData.set(0)
         else:
-            OpcNumDatos.set(1)
-        messagebox.showinfo(message="No se puede realizar mientras se graba", title="Error!")
+            OpcNumData.set(1)
+        messagebox.showinfo(message="This action cannot be performed "+
+                            "while recording is in progress", title="Error!")
         
 
 
 def fnRecordMeasure():
     global fileSave
     global playState
-    global contDatos
+    global contData
     print("Inicio")
     while not (killThread):
         if playState:
             now = datetime.now()
             currentTime = now.strftime("%H:%M:%S")
             Sal = currentTime + "," + ENT + "\n"
-            if(OpcNumDatos.get()):
-                if(contDatos <= 0):
+            if(OpcNumData.get()):
+                if(contData <= 0):
                     fnSave()
                 else:
-                    contDatos = contDatos - 1 
+                    contData = contData - 1 
             if(fileSave != None):
                 fileSave.write(Sal)
-        time.sleep(Intervalo)
+        time.sleep(Interval)
     print("Fin")
 
 
 def thread_Display():
     while not (killThread):
-        try:
-            if not (pause):
-                global flag
-                flag = True
+        if not (pause):
+            global flag
+            flag = True
+            try:
                 global ENT
                 ENT = inst.query("READ?").replace("\n", "")
-                ENT += " " + unidad
+                ENT += " " + unit
                 inst.query("*OPC?")
                 inst.write("*CLS")
-                flag = False
-                lblDisplay.config(text=ENT.replace("\n", ""))
-        except:
-            print("An exception occurred")
+                if(not(pause)):
+                    lblDisplay.config(text=ENT.replace("\n", ""))
+            except:
+                if(not(pause)):
+                    lblDisplay.config(text="Not signal")
+                print("An exception occurred")
+            flag = False
 
 def validationInt(input):
     if input.isdigit() and fileSave == None:
-        global Intervalo
-        Intervalo = int(input) /1000.0
+        global Interval
+        Interval = int(input) /1000.0
         lblInt.config(text="Interval in ms ("+ input +")")
-        print("Intervalo: "+ input)
+        print("Interval: "+ input)
     return True
 
-def validationDatos(input):
+def validationData(input):
     if input.isdigit() and fileSave == None:
-        global contDatos
-        contDatos = int(input)
-        cheNumDatos.config(text="Numero de datos ("+input+")")
+        global contData
+        contData = int(input)
+        cheNumData.config(text="Numero de data ("+input+")")
     return True
 
-
-# *************************** MAIN
+# ****************************************************
+# *********************************************** MAIN
 window = Tk()
-window.geometry("1000x600+10+10")
+window.geometry("1000x400+10+10")
 window.resizable(False, False)
 window.title(idn)
 regInt = window.register(validationInt)
-regDatos = window.register(validationDatos)
+regData = window.register(validationData)
 
-imaPlay = PhotoImage(file="play.png")
-imaSave = PhotoImage(file="save.png")
-OpcNumDatos = IntVar()
+imaPlay = PhotoImage(file="./img/play.png")
+imaSave = PhotoImage(file="./img/save.png")
 
+OpcNumData = IntVar()
 x = threading.Thread(target=thread_Display)
 y = threading.Thread(target=fnRecordMeasure)
+
 try:
     config = fnGetConf()
     if(config.find("RES") >= 0):
-        unidad = "OHM"
+        unit = "OHM"
     elif (config.find("CURR") >= 0):
-        unidad = "A"
+        unit = "A"
     elif (config.find("VOLT") >= 0):
-        unidad = "V"
+        unit = "V"
 except:
     print("Error de conexion")
 
-
-# generar los widgets
-btnACCurrent = Button(window, text="AC Current", command=fnConfCurrAc, width=15, 
+# ********************************* Widgets generation
+btnACCurrent = Button(window, text="AC Current",
+                      command=fnConfCurrAc, width=15, 
     font=("Arial 12 bold"))
-btnACVoltage = Button(window, text="AC Voltage", command=fnConfVoltAc, width=15, 
+btnACVoltage = Button(window, text="AC Voltage",
+                      command=fnConfVoltAc, width=15, 
     font=("Arial 12 bold"))
-btnDCCurrent = Button(window, text="DC Current", command=fnConfCurrDc, width=15, 
+btnDCCurrent = Button(window, text="DC Current",
+                      command=fnConfCurrDc, width=15, 
     font=("Arial 12 bold"))
-btnDCVoltage = Button(window, text="DC Voltage", command=fnConfVoltDc, width=15, 
+btnDCVoltage = Button(window, text="DC Voltage",
+                      command=fnConfVoltDc, width=15, 
     font=("Arial 12 bold"))
-btnResistance = Button(window, text="Resistencia", command=fnConfRes, width=15, 
+btnResistance = Button(window, text="Resistance",
+                       command=fnConfRes, width=15, 
     font=("Arial 12 bold"))
-btnConexion = Button(window, text="Revisar conexion", command=fnInitConexion, width=15, 
+btnConexion = Button(window, text="Check connection",
+                     command=fnInitConnection, width=15, 
     font=("Arial 12 bold"))
 lblDisplay = Label(
-    window, text="texto modificado", 
+    window, text="Not signal", 
     font=("Verdana 36 italic"), 
     fg="green",
     background='black',
@@ -349,24 +351,23 @@ entInterval = Entry(window, width=10,
                font="Verdana 12",
                validate='key',
                validatecommand=(regInt, '%P'))
-btnApplyInt = Button(window, text="Apply Interval", command=fnApplyInt,
-               font="Verdana 12")
 lblRecord = Label(window, 
                   text="Record: Null", 
                   font=("Console 18 bold"), 
                   fg="red")
 lblInt = Label(window,
-               text="Interval in ms ("+ str(int(Intervalo*1000))+")",
+               text="Interval in ms ("+ str(int(Interval*1000))+")",
                font="Verdana 12")
-cheNumDatos = Checkbutton(window, text='Numero de datos (0)', variable=OpcNumDatos, command=fnConDatos,
+cheNumData = Checkbutton(window, text='Number of measurements (0)', 
+                          variable=OpcNumData, command=fnConData,
                font="Verdana 12")
-entNumDatos = Entry(window, width=10,
+entNumData = Entry(window, width=10,
                font="Verdana 12",
                validate='key',
-               validatecommand=(regDatos, '%P'))
+               validatecommand=(regData, '%P'))
 
 
-# posicionamiento de widgets
+# ********************************* Widget positioning
 lblDisplay.place(x=20, y=20)
 btnACCurrent.place(x=20, y=90)
 btnDCCurrent.place(x=20, y=130)
@@ -378,14 +379,13 @@ btnPlay.place(x=560, y=90)
 btnSave.place(x=560, y=130)
 entInterval.place(x=20, y=200)
 lblInt.place(x=170, y=200)
-btnApplyInt.place(x=450, y=200)
-entNumDatos.place(x=20, y=250)
-cheNumDatos.place(x=170, y=250)
+entNumData.place(x=20, y=250)
+cheNumData.place(x=170, y=250)
 lblRecord.place(x=700, y=20)
-
-#Inicio de hilos
+# ************************************** Threads start
 x.start()
 y.start()
+
 if(c == -1):
     window.mainloop()
     pause = True
