@@ -1,7 +1,7 @@
 # ****************************************************
 # MULTIMETRO VIRTUALIZADO LXI
 # DESARROLLADOR: Luis Alberto Barrera Sandoval
-# VERSION: 0.2
+# VERSION: 0.3
 # URL: https://github.com/MiguelOA/multimetroLXI
 # NOTAS
 # ****************************************************
@@ -14,6 +14,7 @@ import pyvisa
 import time
 import threading
 from datetime import datetime
+from datetime import date
 
 # *********************************** GLOBAL VARIABLES
 idn = 'Multimeter: '
@@ -45,7 +46,7 @@ y = None
 killThread = False
 unit = ""
 pause = False
-flag = False
+flag = False    #Display Thread flag
 playState = False
 Interval = 1.0
 fileSave = None
@@ -165,8 +166,9 @@ def fnPlay():
         if fileSave == None:
             fnConData()
             now = datetime.now()
+            today = str(date.today())
             currentTime = now.strftime("%H_%M_%S")
-            nameFile = "Save" + currentTime + ".csv"
+            nameFile = "Save_"+today+"_" + currentTime + ".csv"
             fileSave = open(nameFile, "w")
             measure = fnGetConf()
             Sal = "Tiempo," + measure + "\n"
