@@ -1,7 +1,7 @@
 # ****************************************************
 # MULTIMETRO VIRTUALIZADO LXI
 # DESARROLLADOR: Luis Alberto Barrera Sandoval
-# VERSION: 0.3
+# VERSION: 0.4
 # URL: https://github.com/MiguelOA/multimetroLXI
 # NOTAS
 # ****************************************************
@@ -163,6 +163,7 @@ def fnConfCurrDc():
 def fnPlay():
     if(unit != ""):
         global fileSave
+        global y
         if fileSave == None:
             fnConData()
             now = datetime.now()
@@ -173,6 +174,8 @@ def fnPlay():
             measure = fnGetConf()
             Sal = "Tiempo," + measure + "\n"
             fileSave.write(Sal)
+            y = threading.Thread(target=fnRecordMeasure, daemon=True)
+            y.start()
         global playState
         playState = not (playState)
         global imaPlay
@@ -243,7 +246,7 @@ def fnRecordMeasure():
     global playState
     global contData
     print("Inicio")
-    while not (killThread):
+    while fileSave != None:
         if playState:
             now = datetime.now()
             currentTime = now.strftime("%H:%M:%S")
@@ -255,7 +258,8 @@ def fnRecordMeasure():
                     contData = contData - 1 
             if(fileSave != None):
                 fileSave.write(Sal)
-        time.sleep(Interval)
+            time.sleep(Interval)
+        print('stand by')
     print("Fin")
 
 
@@ -306,8 +310,8 @@ imaPlay = PhotoImage(file="./img/play.png")
 imaSave = PhotoImage(file="./img/save.png")
 
 OpcNumData = IntVar()
-x = threading.Thread(target=thread_Display)
-y = threading.Thread(target=fnRecordMeasure)
+x = threading.Thread(target=thread_Display, daemon=True)
+
 
 try:
     config = fnGetConf()
@@ -386,7 +390,6 @@ cheNumData.place(x=170, y=250)
 lblRecord.place(x=700, y=20)
 # ************************************** Threads start
 x.start()
-y.start()
 
 if(c == -1):
     window.mainloop()
@@ -398,8 +401,5 @@ if(c == -1):
 killThread = True
 if(fileSave != None):
     fileSave.close()
-x.join()
-y.join()
-
 # ****************************************************
 # ************************************ FINAL DE SCRIPT
